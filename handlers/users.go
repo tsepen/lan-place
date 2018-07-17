@@ -8,7 +8,7 @@ import (
 )
 
 type User struct {
-	ID       string `json:"id"`
+	ID       int    `json:"id"`
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -30,15 +30,12 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 		Password: r.FormValue("password"),
 	}
 	db := helpers.Db
-	row, err := db.Exec("INSERT INTO users(name, email, password) VALUES($1, $2, $3)", user.Name, user.Email, user.Password)
+	var id int
+	err := db.QueryRow("INSERT INTO users(name, email, password) VALUES($1, $2, $3) returning id", user.Name, user.Email, user.Password).Scan(&id)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	lastID, err := row.LastInsertId()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println("Id: ", lastID)
+	user.ID = id
+	fmt.Println(user)
 }
