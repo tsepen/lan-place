@@ -11,6 +11,8 @@ func New() *mux.Router {
 
 	r.HandleFunc("/api/v1/sign-in", handlers.SignIn).Methods("POST")
 	r.HandleFunc("/api/v1/sign-up", handlers.SignUp).Methods("POST")
+	r.HandleFunc("/api/v1/sign-out", handlers.SignOut).Methods("GET")
+	r.HandleFunc("/api/v1/secret", handlers.Auth(handlers.Secret)).Methods("GET")
 	// v1 := router.Group("/api/v1")
 	// {
 	// 	v1.POST("/sign-in", handlers.SignIn)

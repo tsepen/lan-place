@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"landing-place/helpers"
-
 	"net/http"
 )
 
@@ -38,6 +37,7 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid login or password", 402)
 	}
 	if match {
+		helpers.CreateSession(w, r, u.ID)
 		js, _ := json.Marshal(u)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(js)
@@ -71,4 +71,26 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
+}
+
+func SignOut(w http.ResponseWriter, r *http.Request) {
+	helpers.DestroySession(w, r)
+}
+
+func Auth(f http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("Middlewar!!")
+		user := helpers.GetSession(w, r)
+		if user.ID != 0 {
+			fmt.Println(user)
+			f(w, r)
+		} else {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+		}
+
+	}
+}
+
+func Secret(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Urrraaaa!!")
 }
