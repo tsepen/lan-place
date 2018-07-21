@@ -44,7 +44,6 @@ func GetSession(w http.ResponseWriter, r *http.Request) *User {
 	if err != nil && err != sql.ErrNoRows {
 		fmt.Println(err)
 	}
-
 	return u
 }
 

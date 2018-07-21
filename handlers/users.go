@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -14,6 +15,8 @@ type User struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
+
+var ContextUserKey = "user"
 
 func SignIn(w http.ResponseWriter, r *http.Request) {
 	user := User{
@@ -61,15 +64,15 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 	var password string
 	err := db.QueryRow("INSERT INTO users(name, email, password) VALUES($1, $2, $3) returning id, password", user.Name, user.Email, user.Password).Scan(&id, &password)
 	if err != nil {
-		fmt.Println(err)
+		http.Error(w, "This email register", 400)
+		return
 	}
 
 	user.ID = id
 	user.Password = password
 
-	js, _ := json.Marshal(user)
+	js, _ := json.MarshalIndent(user, "", " ")
 
-	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
 }
 
@@ -79,18 +82,20 @@ func SignOut(w http.ResponseWriter, r *http.Request) {
 
 func Auth(f http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Middlewar!!")
+
 		user := helpers.GetSession(w, r)
 		if user.ID != 0 {
-			fmt.Println(user)
-			f(w, r)
+			ctx := context.WithValue(r.Context(), ContextUserKey, user)
+			f.ServeHTTP(w, r.WithContext(ctx))
 		} else {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 		}
-
 	}
 }
 
 func Secret(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Urrraaaa!!")
+	user := r.Context().Value(ContextUserKey)
+	js, _ := json.MarshalIndent(user, "", " ")
+
+	w.Write(js)
 }
