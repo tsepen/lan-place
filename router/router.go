@@ -9,32 +9,29 @@ import (
 func New() *mux.Router {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/api/v1/sign-in", handlers.SignIn).Methods("POST")
-	r.HandleFunc("/api/v1/sign-up", handlers.SignUp).Methods("POST")
-	r.HandleFunc("/api/v1/sign-out", handlers.SignOut).Methods("GET")
-	r.HandleFunc("/api/v1/secret", handlers.Auth(handlers.Secret)).Methods("GET")
-	// v1 := router.Group("/api/v1")
-	// {
-	// 	v1.POST("/sign-in", handlers.SignIn)
-	// 	v1.POST("/sign-up", handlers.SignUp)
+	v1 := r.PathPrefix("/api/v1").Subrouter()
 
-	// 	v1.GET("/site", handlers.GetSites)
-	// 	v1.GET("/site/:id", handlers.GetOneSite)
-	// 	v1.POST("/site", handlers.CreateSite)
-	// 	v1.POST("/site/:id/like", handlers.LikeSite)
-	// 	v1.PUT("/site/:id", handlers.UpdateSite)
-	// 	v1.DELETE("/site/:id", handlers.DeleteSite)
+	v1.HandleFunc("/sign-in", handlers.SignIn).Methods("POST")
+	v1.HandleFunc("/sign-up", handlers.SignUp).Methods("POST")
+	v1.HandleFunc("/sign-out", handlers.SignOut).Methods("GET")
 
-	// 	v1.GET("/category", handlers.GetCategories)
-	// 	v1.POST("/category", handlers.CreateCategory)
-	// 	v1.PUT("/category/:id", handlers.UpdateCategory)
-	// 	v1.DELETE("/category/:id", handlers.DeleteCategory)
+	v1.HandleFunc("/site", handlers.GetSites).Methods("GET")
+	v1.HandleFunc("/site", handlers.Auth(handlers.CreateSite)).Methods("POST")
+	v1.HandleFunc("/site/{id}", handlers.GetOneSite).Methods("GET")
+	v1.HandleFunc("/site/{id}", handlers.Auth(handlers.UpdateSite)).Methods("PUT")
+	v1.HandleFunc("/site/{id}", handlers.Auth(handlers.DeleteSite)).Methods("DELETE")
 
-	// 	v1.GET("/tag", handlers.GetTags)
-	// 	v1.POST("/tag", handlers.CreateTag)
-	// 	v1.PUT("/tag/:id", handlers.UpdateTag)
-	// 	v1.DELETE("/tag/:id", handlers.DeleteTag)
-	// }
+	v1.HandleFunc("/tag", handlers.GetTags).Methods("GET")
+	v1.HandleFunc("/tag", handlers.Auth(handlers.CreateTag)).Methods("POST")
+	v1.HandleFunc("/tag/{id}", handlers.GetOneTag).Methods("GET")
+	v1.HandleFunc("/tag/{id}", handlers.Auth(handlers.UpdateTag)).Methods("PUT")
+	v1.HandleFunc("/tag/{id}", handlers.Auth(handlers.DeleteTag)).Methods("DELETE")
+
+	v1.HandleFunc("/category", handlers.GetCategories).Methods("GET")
+	v1.HandleFunc("/category", handlers.Auth(handlers.CreateCategory)).Methods("POST")
+	v1.HandleFunc("/category/{id}", handlers.GetOneCategory).Methods("GET")
+	v1.HandleFunc("/category/{id}", handlers.Auth(handlers.UpdateCategory)).Methods("PUT")
+	v1.HandleFunc("/category/{id}", handlers.Auth(handlers.DeleteCategory)).Methods("DELETE")
 
 	return r
 }

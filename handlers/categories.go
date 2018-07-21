@@ -1,36 +1,36 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
 )
 
 func GetCategories(w http.ResponseWriter, r *http.Request) {
-	// fmt.Println("get")
-
-	// session, _ := store.Get(r, "cookie-name")
-
-	// // Check if user is authenticated
-	// if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
-	// 	http.Error(w, "Forbidden", http.StatusForbidden)
-	// 	return
-	// }
-
-	// // Print secret message
-	// fmt.Fprintln(w, "The cake is a lie!")
-
+	fmt.Println("Get categories")
 }
 
-func CreateCategory(c *gin.Context) {
-	fmt.Println("post")
+func GetOneCategory(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Get one cat")
 }
 
-func UpdateCategory(c *gin.Context) {
-	fmt.Println("update")
+func CreateCategory(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user")
+	js, _ := json.MarshalIndent(user, "", " ")
+
+	w.Write(js)
 }
 
-func DeleteCategory(c *gin.Context) {
-	fmt.Println("delete")
+func UpdateCategory(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user")
+	js, _ := json.MarshalIndent(user, "", " ")
+
+	w.Write(js)
+}
+
+func DeleteCategory(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user")
+	js, _ := json.MarshalIndent(user, "", " ")
+
+	w.Write(js)
 }

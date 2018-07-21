@@ -16,8 +16,6 @@ type User struct {
 	Password string `json:"password"`
 }
 
-var ContextUserKey = "user"
-
 func SignIn(w http.ResponseWriter, r *http.Request) {
 	user := User{
 		Email:    r.FormValue("email"),
@@ -85,17 +83,10 @@ func Auth(f http.HandlerFunc) http.HandlerFunc {
 
 		user := helpers.GetSession(w, r)
 		if user.ID != 0 {
-			ctx := context.WithValue(r.Context(), ContextUserKey, user)
+			ctx := context.WithValue(r.Context(), "user", user)
 			f.ServeHTTP(w, r.WithContext(ctx))
 		} else {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 		}
 	}
-}
-
-func Secret(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value(ContextUserKey)
-	js, _ := json.MarshalIndent(user, "", " ")
-
-	w.Write(js)
 }

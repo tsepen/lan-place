@@ -1,23 +1,36 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
-
-	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
-func GetTags(c *gin.Context) {
-	fmt.Println("get")
+func GetTags(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Get tags")
 }
 
-func CreateTag(c *gin.Context) {
-	fmt.Println("post")
+func GetOneTag(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Get one tag")
 }
 
-func UpdateTag(c *gin.Context) {
-	fmt.Println("update")
+func CreateTag(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user")
+	js, _ := json.MarshalIndent(user, "", " ")
+
+	w.Write(js)
 }
 
-func DeleteTag(c *gin.Context) {
-	fmt.Println("delete")
+func UpdateTag(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user")
+	js, _ := json.MarshalIndent(user, "", " ")
+
+	w.Write(js)
+}
+
+func DeleteTag(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user")
+	js, _ := json.MarshalIndent(user, "", " ")
+
+	w.Write(js)
 }

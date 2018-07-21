@@ -1,31 +1,43 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
-
-	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
-func GetSites(c *gin.Context) {
+func GetSites(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("get")
 }
 
-func GetOneSite(c *gin.Context) {
-	fmt.Println("get")
+func GetOneSite(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("getOne")
 }
 
-func CreateSite(c *gin.Context) {
-	fmt.Println("post")
+func CreateSite(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user")
+	js, _ := json.MarshalIndent(user, "", " ")
+
+	w.Write(js)
 }
 
-func UpdateSite(c *gin.Context) {
-	fmt.Println("update")
+func UpdateSite(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user")
+	js, _ := json.MarshalIndent(user, "", " ")
+
+	w.Write(js)
 }
 
-func DeleteSite(c *gin.Context) {
-	fmt.Println("delete")
+func DeleteSite(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user")
+	js, _ := json.MarshalIndent(user, "", " ")
+
+	w.Write(js)
 }
 
-func LikeSite(c *gin.Context) {
-	fmt.Println("like")
+func LikeSite(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user")
+	js, _ := json.MarshalIndent(user, "", " ")
+
+	w.Write(js)
 }
