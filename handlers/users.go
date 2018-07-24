@@ -21,10 +21,8 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 		Email:    r.FormValue("email"),
 		Password: r.FormValue("password"),
 	}
-
-	db := helpers.Db
-
 	var u = new(User)
+	db := helpers.Db
 
 	row := db.QueryRow("SELECT * FROM users WHERE email=$1;", user.Email)
 	err := row.Scan(&u.ID, &u.Email, &u.Name, &u.Password)
