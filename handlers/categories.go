@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"landing-place/helpers"
@@ -21,6 +22,9 @@ func GetCategories(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	defer rows.Close()
+
 	categories := make([]*Category, 0)
 
 	for rows.Next() {
@@ -48,11 +52,17 @@ func GetOneCategory(w http.ResponseWriter, r *http.Request) {
 
 	db := helpers.Db
 
-	err := db.QueryRow("SELECT * FROM categories WHERE id=$1", category.ID).Scan(&category.ID, &category.Title)
-	if err != nil {
-		http.Error(w, "Not found", 404)
+	row := db.QueryRow("SELECT * FROM categories WHERE id=$1", category.ID)
+
+	err := row.Scan(&category.ID, &category.Title)
+	if err == sql.ErrNoRows {
+		http.NotFound(w, r)
+		return
+	} else if err != nil {
+		http.Error(w, http.StatusText(500), 500)
 		return
 	}
+
 	js, _ := json.MarshalIndent(category, "", " ")
 
 	w.Write(js)
@@ -85,10 +95,15 @@ func UpdateCategory(w http.ResponseWriter, r *http.Request) {
 
 	db := helpers.Db
 
-	err := db.QueryRow("UPDATE categories SET title = $1 WHERE id = $2", category.Title, category.ID).Scan(&category.ID, &category.Title)
+	result, err := db.Exec("UPDATE categories SET title = $1 WHERE id = $2", category.Title, category.ID)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Category not found", 404)
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil || rowsAffected == 0 {
+		http.Error(w, http.StatusText(500), 500)
 		return
 	}
 
@@ -102,17 +117,20 @@ func DeleteCategory(w http.ResponseWriter, r *http.Request) {
 
 	id := vars["id"]
 
-	var deletedID int
-
 	db := helpers.Db
 
-	err := db.QueryRow("DELETE FROM categories WHERE id = $1", id).Scan(&deletedID)
+	result, err := db.Exec("DELETE FROM categories WHERE id = $1", id)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Category not found", 404)
+		http.Error(w, http.StatusText(500), 500)
 		return
 	}
 
-	fmt.Fprint(w, deletedID)
+	rowsAffected, err := result.RowsAffected()
+	if err != nil || rowsAffected == 0 {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	fmt.Fprintf(w, "Category with id %s deleted sucsessfuly\n", id)
 
 }

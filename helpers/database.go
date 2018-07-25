@@ -13,42 +13,35 @@ var Db *sql.DB
 func createTables() {
 	db := Db
 
-	categories, err := db.Query("CREATE TABLE IF NOT EXISTS categories (id SERIAL PRIMARY KEY,title CHARACTER VARYING(40),UNIQUE(title));")
-	if err != nil {
-		log.Println(err)
+	_, categoriesErr := db.Exec("CREATE TABLE IF NOT EXISTS categories (id SERIAL PRIMARY KEY,title CHARACTER VARYING(40),UNIQUE(title));")
+	if categoriesErr != nil {
+		log.Println(categoriesErr)
 	}
 
-	tags, err := db.Query("CREATE TABLE IF NOT EXISTS tags (id SERIAL PRIMARY KEY,title CHARACTER VARYING(40),UNIQUE(title));")
-	if err != nil {
-		log.Println(err)
+	_, tagsErr := db.Exec("CREATE TABLE IF NOT EXISTS tags (id SERIAL PRIMARY KEY,title CHARACTER VARYING(40),UNIQUE(title));")
+	if tagsErr != nil {
+		log.Println(tagsErr)
 	}
 
-	users, err := db.Query("CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY,name CHARACTER VARYING(40),email CHARACTER VARYING(40),password text,UNIQUE(email));")
-	if err != nil {
-		log.Println(err)
+	_, usersErr := db.Exec("CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY,name CHARACTER VARYING(40),email CHARACTER VARYING(40),password text,UNIQUE(email));")
+	if usersErr != nil {
+		log.Println(usersErr)
 	}
 
-	sites, err := db.Query("CREATE TABLE IF NOT EXISTS sites (id SERIAL PRIMARY KEY,title CHARACTER VARYING(40),description text,url CHARACTER VARYING(40),    created DATE default NOW(),rating INTEGER default 0,views INTEGER default 0, UNIQUE(url));")
-	if err != nil {
-		log.Println(err)
+	_, sitesErr := db.Exec("CREATE TABLE IF NOT EXISTS sites (id SERIAL PRIMARY KEY,title CHARACTER VARYING(40),description text,url CHARACTER VARYING(40),    created DATE default NOW(),rating INTEGER default 0,views INTEGER default 0, UNIQUE(url));")
+	if sitesErr != nil {
+		log.Println(sitesErr)
 	}
 
-	sitesCategories, err := db.Query("CREATE TABLE IF NOT EXISTS sitesCategories (siteId integer not null references sites(id),categotyId integer not null references categories(id));")
-	if err != nil {
-		log.Println(err)
+	_, sitesCategoriesErr := db.Exec("CREATE TABLE IF NOT EXISTS sitesCategories (siteId integer not null references sites(id),categoryId integer not null references categories(id));")
+	if sitesCategoriesErr != nil {
+		log.Println(sitesCategoriesErr)
 	}
 
-	sitesTags, err := db.Query("CREATE TABLE IF NOT EXISTS sitesTags (siteId integer not null references sites(id),tagId integer not null references tags(id));")
-	if err != nil {
-		log.Println(err)
+	_, sitesTagsErr := db.Exec("CREATE TABLE IF NOT EXISTS sitesTags (siteId integer not null references sites(id),tagId integer not null references tags(id));")
+	if sitesTagsErr != nil {
+		log.Println(sitesTagsErr)
 	}
-
-	defer categories.Close()
-	defer users.Close()
-	defer sites.Close()
-	defer tags.Close()
-	defer sitesCategories.Close()
-	defer sitesTags.Close()
 }
 
 func ConnectDB() {

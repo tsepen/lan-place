@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"landing-place/helpers"
+	"landing-place/models"
+	"landing-place/services"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -23,6 +26,9 @@ func GetTags(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not found", 400)
 		return
 	}
+
+	defer rows.Close()
+
 	tags := make([]*Tag, 0)
 	for rows.Next() {
 		tag := new(Tag)
@@ -48,11 +54,17 @@ func GetOneTag(w http.ResponseWriter, r *http.Request) {
 
 	db := helpers.Db
 
-	err := db.QueryRow("SELECT * FROM tags WHERE id=$1", tag.ID).Scan(&tag.ID, &tag.Title)
-	if err != nil {
-		http.Error(w, "Not found", 404)
+	row := db.QueryRow("SELECT * FROM tags WHERE id=$1", tag.ID)
+
+	err := row.Scan(&tag.ID, &tag.Title)
+	if err == sql.ErrNoRows {
+		http.NotFound(w, r)
+		return
+	} else if err != nil {
+		http.Error(w, http.StatusText(500), 500)
 		return
 	}
+
 	js, _ := json.MarshalIndent(tag, "", " ")
 
 	w.Write(js)
@@ -60,18 +72,17 @@ func GetOneTag(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateTag(w http.ResponseWriter, r *http.Request) {
-	tag := Tag{
+	tag := models.Tag{
 		Title: r.FormValue("title"),
 	}
 
-	db := helpers.Db
-
-	err := db.QueryRow("INSERT INTO tags(title) VALUES($1) returning id", tag.Title).Scan(&tag.ID)
+	err := services.CreateTag(&tag)
 	if err != nil {
-		http.Error(w, "This tag in database", 400)
+		http.Error(w, http.StatusText(500), 500)
 		return
 	}
-	js, _ := json.MarshalIndent(tag, "", " ")
+
+	js, err := json.MarshalIndent(tag, "", " ")
 
 	w.Write(js)
 }
@@ -86,10 +97,16 @@ func UpdateTag(w http.ResponseWriter, r *http.Request) {
 
 	db := helpers.Db
 
-	err := db.QueryRow("UPDATE tags SET title = $1 WHERE id = $2", tag.Title, tag.ID).Scan(&tag.ID, &tag.Title)
+	result, err := db.Exec("UPDATE tags SET title = $1 WHERE id = $2", tag.Title, tag.ID)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Tag not found", 404)
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	rowsAffected, err := result.RowsAffected()
+
+	if err != nil || rowsAffected == 0 {
+		http.Error(w, http.StatusText(500), 500)
 		return
 	}
 
@@ -103,16 +120,20 @@ func DeleteTag(w http.ResponseWriter, r *http.Request) {
 
 	id := vars["id"]
 
-	var deletedID int
-
 	db := helpers.Db
 
-	err := db.QueryRow("DELETE FROM tags WHERE id = $1", id).Scan(&deletedID)
+	result, err := db.Exec("DELETE FROM tags WHERE id = $1", id)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Tag not found", 404)
+		http.Error(w, http.StatusText(500), 500)
 		return
 	}
 
-	fmt.Fprint(w, deletedID)
+	rowsAffected, err := result.RowsAffected()
+
+	if err != nil || rowsAffected == 0 {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	fmt.Fprintf(w, "Tag with id %s deleted successfully\n", id)
 }

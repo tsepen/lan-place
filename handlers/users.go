@@ -51,14 +51,15 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 		Password: r.FormValue("password"),
 	}
 
-	hash, _ := helpers.HashPassword(user.Password) // ignore error for the sake of simplicity
+	hash, _ := helpers.HashPassword(user.Password)
 
 	user.Password = hash
 
 	db := helpers.Db
 	var id int
 	var password string
-	err := db.QueryRow("INSERT INTO users(name, email, password) VALUES($1, $2, $3) returning id, password", user.Name, user.Email, user.Password).Scan(&id, &password)
+	row := db.QueryRow("INSERT INTO users(name, email, password) VALUES($1, $2, $3) returning id, password", user.Name, user.Email, user.Password)
+	err := row.Scan(&id, &password)
 	if err != nil {
 		http.Error(w, "This email register", 400)
 		return
