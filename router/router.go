@@ -20,6 +20,7 @@ func New() *mux.Router {
 	v1.HandleFunc("/site/{id}", handlers.GetOneSite).Methods("GET")
 	v1.HandleFunc("/site/{id}", handlers.Auth(handlers.UpdateSite)).Methods("PUT")
 	v1.HandleFunc("/site/{id}", handlers.Auth(handlers.DeleteSite)).Methods("DELETE")
+	v1.HandleFunc("/site/{id}/like", handlers.LikeSite).Methods("PUT")
 
 	v1.HandleFunc("/tag", handlers.GetTags).Methods("GET")
 	v1.HandleFunc("/tag", handlers.Auth(handlers.CreateTag)).Methods("POST")

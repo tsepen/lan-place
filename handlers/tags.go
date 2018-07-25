@@ -50,7 +50,7 @@ func GetOneTag(w http.ResponseWriter, r *http.Request) {
 
 	err := db.QueryRow("SELECT * FROM tags WHERE id=$1", tag.ID).Scan(&tag.ID, &tag.Title)
 	if err != nil {
-		http.Error(w, "Not found", 400)
+		http.Error(w, "Not found", 404)
 		return
 	}
 	js, _ := json.MarshalIndent(tag, "", " ")
@@ -86,7 +86,12 @@ func UpdateTag(w http.ResponseWriter, r *http.Request) {
 
 	db := helpers.Db
 
-	db.QueryRow("UPDATE tags SET title = $1 WHERE id = $2", tag.Title, tag.ID).Scan(&tag.ID, &tag.Title)
+	err := db.QueryRow("UPDATE tags SET title = $1 WHERE id = $2", tag.Title, tag.ID).Scan(&tag.ID, &tag.Title)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Tag not found", 404)
+		return
+	}
 
 	js, _ := json.Marshal(tag)
 
@@ -98,9 +103,16 @@ func DeleteTag(w http.ResponseWriter, r *http.Request) {
 
 	id := vars["id"]
 
+	var deletedID int
+
 	db := helpers.Db
 
-	db.QueryRow("DELETE FROM tags WHERE id = $1", id)
+	err := db.QueryRow("DELETE FROM tags WHERE id = $1", id).Scan(&deletedID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Tag not found", 404)
+		return
+	}
 
-	fmt.Fprint(w, "Delete")
+	fmt.Fprint(w, deletedID)
 }

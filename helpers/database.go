@@ -28,7 +28,17 @@ func createTables() {
 		log.Println(err)
 	}
 
-	sites, err := db.Query("CREATE TABLE IF NOT EXISTS sites (id SERIAL PRIMARY KEY,title CHARACTER VARYING(40),description text,url CHARACTER VARYING(40),    created DATE default NOW(),rating INTEGER default 0,views INTEGER default 0, categories CHARACTER VARYING(40)[],tags CHARACTER VARYING(40)[],    UNIQUE(url));")
+	sites, err := db.Query("CREATE TABLE IF NOT EXISTS sites (id SERIAL PRIMARY KEY,title CHARACTER VARYING(40),description text,url CHARACTER VARYING(40),    created DATE default NOW(),rating INTEGER default 0,views INTEGER default 0, UNIQUE(url));")
+	if err != nil {
+		log.Println(err)
+	}
+
+	sitesCategories, err := db.Query("CREATE TABLE IF NOT EXISTS sitesCategories (siteId integer not null references sites(id),categotyId integer not null references categories(id));")
+	if err != nil {
+		log.Println(err)
+	}
+
+	sitesTags, err := db.Query("CREATE TABLE IF NOT EXISTS sitesTags (siteId integer not null references sites(id),tagId integer not null references tags(id));")
 	if err != nil {
 		log.Println(err)
 	}
@@ -37,6 +47,8 @@ func createTables() {
 	defer users.Close()
 	defer sites.Close()
 	defer tags.Close()
+	defer sitesCategories.Close()
+	defer sitesTags.Close()
 }
 
 func ConnectDB() {

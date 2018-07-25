@@ -50,7 +50,7 @@ func GetOneCategory(w http.ResponseWriter, r *http.Request) {
 
 	err := db.QueryRow("SELECT * FROM categories WHERE id=$1", category.ID).Scan(&category.ID, &category.Title)
 	if err != nil {
-		http.Error(w, "Not found", 400)
+		http.Error(w, "Not found", 404)
 		return
 	}
 	js, _ := json.MarshalIndent(category, "", " ")
@@ -85,7 +85,12 @@ func UpdateCategory(w http.ResponseWriter, r *http.Request) {
 
 	db := helpers.Db
 
-	db.QueryRow("UPDATE categories SET title = $1 WHERE id = $2", category.Title, category.ID).Scan(&category.ID, &category.Title)
+	err := db.QueryRow("UPDATE categories SET title = $1 WHERE id = $2", category.Title, category.ID).Scan(&category.ID, &category.Title)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Category not found", 404)
+		return
+	}
 
 	js, _ := json.Marshal(category)
 
@@ -97,10 +102,17 @@ func DeleteCategory(w http.ResponseWriter, r *http.Request) {
 
 	id := vars["id"]
 
+	var deletedID int
+
 	db := helpers.Db
 
-	db.QueryRow("DELETE FROM categories WHERE id = $1", id)
+	err := db.QueryRow("DELETE FROM categories WHERE id = $1", id).Scan(&deletedID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Category not found", 404)
+		return
+	}
 
-	fmt.Fprint(w, "Delete category")
+	fmt.Fprint(w, deletedID)
 
 }
