@@ -4,24 +4,18 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"landing-place/helpers"
 	"landing-place/models"
 	"landing-place/services"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 )
 
-type Tag struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
-}
-
 func GetTags(w http.ResponseWriter, r *http.Request) {
-	db := helpers.Db
 
-	rows, err := db.Query("SELECT * FROM tags")
+	rows, err := services.GetTag()
 	if err != nil {
 		http.Error(w, "Not found", 400)
 		return
@@ -29,9 +23,9 @@ func GetTags(w http.ResponseWriter, r *http.Request) {
 
 	defer rows.Close()
 
-	tags := make([]*Tag, 0)
+	tags := make([]*models.Tag, 0)
 	for rows.Next() {
-		tag := new(Tag)
+		tag := new(models.Tag)
 		err := rows.Scan(&tag.ID, &tag.Title)
 		if err != nil {
 			fmt.Println(err)
@@ -46,17 +40,20 @@ func GetTags(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetOneTag(w http.ResponseWriter, r *http.Request) {
-	var tag Tag
+	var tag models.Tag
 
 	vars := mux.Vars(r)
 
-	tag.ID = vars["id"]
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	db := helpers.Db
+	tag.ID = id
 
-	row := db.QueryRow("SELECT * FROM tags WHERE id=$1", tag.ID)
+	row := services.GetOneTag(tag.ID)
 
-	err := row.Scan(&tag.ID, &tag.Title)
+	err = row.Scan(&tag.ID, &tag.Title)
 	if err == sql.ErrNoRows {
 		http.NotFound(w, r)
 		return
@@ -90,21 +87,17 @@ func CreateTag(w http.ResponseWriter, r *http.Request) {
 func UpdateTag(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	tag := Tag{
-		ID:    vars["id"],
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	tag := models.Tag{
+		ID:    id,
 		Title: r.FormValue("title"),
 	}
 
-	db := helpers.Db
-
-	result, err := db.Exec("UPDATE tags SET title = $1 WHERE id = $2", tag.Title, tag.ID)
-	if err != nil {
-		http.Error(w, http.StatusText(500), 500)
-		return
-	}
-
-	rowsAffected, err := result.RowsAffected()
-
+	rowsAffected, err := services.UpdateTag(&tag)
 	if err != nil || rowsAffected == 0 {
 		http.Error(w, http.StatusText(500), 500)
 		return
@@ -120,16 +113,7 @@ func DeleteTag(w http.ResponseWriter, r *http.Request) {
 
 	id := vars["id"]
 
-	db := helpers.Db
-
-	result, err := db.Exec("DELETE FROM tags WHERE id = $1", id)
-	if err != nil {
-		http.Error(w, http.StatusText(500), 500)
-		return
-	}
-
-	rowsAffected, err := result.RowsAffected()
-
+	rowsAffected, err := services.DeleteTag(id)
 	if err != nil || rowsAffected == 0 {
 		http.Error(w, http.StatusText(500), 500)
 		return

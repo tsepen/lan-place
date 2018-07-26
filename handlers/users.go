@@ -6,26 +6,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"landing-place/helpers"
+	"landing-place/models"
+	"landing-place/services"
 	"net/http"
 )
 
-type User struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
 func SignIn(w http.ResponseWriter, r *http.Request) {
-	user := User{
+	user := models.User{
 		Email:    r.FormValue("email"),
 		Password: r.FormValue("password"),
 	}
-	var u = new(User)
-	db := helpers.Db
+	var u = new(models.User)
 
-	row := db.QueryRow("SELECT * FROM users WHERE email=$1;", user.Email)
-	err := row.Scan(&u.ID, &u.Email, &u.Name, &u.Password)
+	row := services.SignIn(user.Email)
+
+	err := row.Scan(&u.ID, &u.Name, &u.Email, &u.Password)
 	if err != nil && err != sql.ErrNoRows {
 		fmt.Println(err)
 	}
@@ -45,7 +40,7 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 }
 
 func SignUp(w http.ResponseWriter, r *http.Request) {
-	user := User{
+	user := models.User{
 		Name:     r.FormValue("name"),
 		Email:    r.FormValue("email"),
 		Password: r.FormValue("password"),
@@ -55,18 +50,11 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 
 	user.Password = hash
 
-	db := helpers.Db
-	var id int
-	var password string
-	row := db.QueryRow("INSERT INTO users(name, email, password) VALUES($1, $2, $3) returning id, password", user.Name, user.Email, user.Password)
-	err := row.Scan(&id, &password)
+	err := services.SignUp(&user)
 	if err != nil {
 		http.Error(w, "This email register", 400)
 		return
 	}
-
-	user.ID = id
-	user.Password = password
 
 	js, _ := json.MarshalIndent(user, "", " ")
 

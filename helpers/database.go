@@ -33,12 +33,12 @@ func createTables() {
 		log.Println(sitesErr)
 	}
 
-	_, sitesCategoriesErr := db.Exec("CREATE TABLE IF NOT EXISTS sitesCategories (siteId integer not null references sites(id),categoryId integer not null references categories(id));")
+	_, sitesCategoriesErr := db.Exec("CREATE TABLE IF NOT EXISTS sitesCategories (siteId integer not null references sites(id),categoryId integer not null references categories(id) ON DELETE CASCADE ON UPDATE CASCADE);")
 	if sitesCategoriesErr != nil {
 		log.Println(sitesCategoriesErr)
 	}
 
-	_, sitesTagsErr := db.Exec("CREATE TABLE IF NOT EXISTS sitesTags (siteId integer not null references sites(id),tagId integer not null references tags(id));")
+	_, sitesTagsErr := db.Exec("CREATE TABLE IF NOT EXISTS sitesTags (siteId integer not null references sites(id),tagId integer not null references tags(id) ON DELETE CASCADE ON UPDATE CASCADE);")
 	if sitesTagsErr != nil {
 		log.Println(sitesTagsErr)
 	}

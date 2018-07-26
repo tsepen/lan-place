@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"landing-place/helpers"
+	"landing-place/models"
+	"landing-place/services"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -16,11 +18,11 @@ type Category struct {
 }
 
 func GetCategories(w http.ResponseWriter, r *http.Request) {
-	db := helpers.Db
 
-	rows, err := db.Query("SELECT * FROM categories")
+	rows, err := services.GetCategory()
 	if err != nil {
-		fmt.Println(err)
+		http.Error(w, "Not found", 400)
+		return
 	}
 
 	defer rows.Close()
@@ -50,9 +52,7 @@ func GetOneCategory(w http.ResponseWriter, r *http.Request) {
 
 	category.ID = vars["id"]
 
-	db := helpers.Db
-
-	row := db.QueryRow("SELECT * FROM categories WHERE id=$1", category.ID)
+	row := services.GetOneCategory(category.ID)
 
 	err := row.Scan(&category.ID, &category.Title)
 	if err == sql.ErrNoRows {
@@ -69,17 +69,16 @@ func GetOneCategory(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateCategory(w http.ResponseWriter, r *http.Request) {
-	category := Category{
+	category := models.Category{
 		Title: r.FormValue("title"),
 	}
 
-	db := helpers.Db
-
-	err := db.QueryRow("INSERT INTO categories(title) VALUES($1) returning id", category.Title).Scan(&category.ID)
+	err := services.CreateCategory(&category)
 	if err != nil {
-		http.Error(w, "This category in database", 400)
+		http.Error(w, http.StatusText(500), 500)
 		return
 	}
+
 	js, _ := json.MarshalIndent(category, "", " ")
 
 	w.Write(js)
@@ -87,21 +86,17 @@ func CreateCategory(w http.ResponseWriter, r *http.Request) {
 
 func UpdateCategory(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	category := Category{
-		ID:    vars["id"],
+	category := models.Category{
+		ID:    id,
 		Title: r.FormValue("title"),
 	}
 
-	db := helpers.Db
-
-	result, err := db.Exec("UPDATE categories SET title = $1 WHERE id = $2", category.Title, category.ID)
-	if err != nil {
-		http.Error(w, http.StatusText(500), 500)
-		return
-	}
-
-	rowsAffected, err := result.RowsAffected()
+	rowsAffected, err := services.UpdateCategory(&category)
 	if err != nil || rowsAffected == 0 {
 		http.Error(w, http.StatusText(500), 500)
 		return
@@ -117,15 +112,7 @@ func DeleteCategory(w http.ResponseWriter, r *http.Request) {
 
 	id := vars["id"]
 
-	db := helpers.Db
-
-	result, err := db.Exec("DELETE FROM categories WHERE id = $1", id)
-	if err != nil {
-		http.Error(w, http.StatusText(500), 500)
-		return
-	}
-
-	rowsAffected, err := result.RowsAffected()
+	rowsAffected, err := services.DeleteCategory(id)
 	if err != nil || rowsAffected == 0 {
 		http.Error(w, http.StatusText(500), 500)
 		return

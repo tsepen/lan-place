@@ -5,48 +5,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 
-	"landing-place/helpers"
+	"landing-place/models"
+	"landing-place/services"
 )
 
-type tag struct {
-	ID    int    `json:"id"`
-	title string `json:"title"`
-}
-
-type category struct {
-	Siteid     int    `json:"siteId"`
-	CategoryID string `json:"categoryId"`
-}
-
-type Site struct {
-	ID          int         `json:"id"`
-	Title       string      `json:"title"`
-	Description string      `json:"description"`
-	URL         string      `json:"url"`
-	Created     string      `json:"createdAt"`
-	Rating      int         `json:"rating"`
-	Views       int         `json:"views"`
-	Tags        []*tag      `json:"tags"`
-	Categories  []*category `json:"categories"`
-}
-
 func GetSites(w http.ResponseWriter, r *http.Request) {
-	db := helpers.Db
 
-	rows, err := db.Query("SELECT * FROM sites")
+	rows, err := services.GetSites()
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	defer rows.Close()
 
-	sites := make([]*Site, 0)
+	sites := make([]*models.Site, 0)
 
 	for rows.Next() {
-		site := new(Site)
+		site := new(models.Site)
 
 		err := rows.Scan(&site.ID, &site.Title, &site.Description, &site.URL, &site.Created, &site.Rating, &site.Views)
 		if err != nil {
@@ -66,11 +45,10 @@ func GetOneSite(w http.ResponseWriter, r *http.Request) {
 
 	id := vars["id"]
 
-	site := new(Site)
+	site := new(models.Site)
 
-	db := helpers.Db
+	row := services.GetOneSite(id)
 
-	row := db.QueryRow("UPDATE sites SET views=views+1 WHERE id=$1 returning *", id)
 	err := row.Scan(&site.ID, &site.Title, &site.Description, &site.URL, &site.Created, &site.Rating, &site.Views)
 	if err == sql.ErrNoRows {
 		http.NotFound(w, r)
@@ -80,13 +58,13 @@ func GetOneSite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := db.Query("SELECT s.title,	array_agg(t.title) FILTER (WHERE t.title IS NOT NULL) AS tags FROM sites s LEFT JOIN sitesTags st ON s.id = st.siteid LEFT JOIN tags t ON st.tagid = t.id WHERE s.id = $1 GROUP BY s.title;", id)
+	/* rows, err := db.Query("SELECT s.title,	array_agg(t.title) FILTER (WHERE t.title IS NOT NULL) AS tags FROM sites s LEFT JOIN sitesTags st ON s.id = st.siteid LEFT JOIN tags t ON st.tagid = t.id WHERE s.id = $1 GROUP BY s.title;", id)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Error", 404)
 		return
 	}
-	fmt.Println(rows)
+	fmt.Println(rows) */
 	/* 	for rows.Next() {
 		js, _ := json.MarshalIndent(rows, "", " ")
 		fmt.Println(js)
@@ -98,7 +76,7 @@ func GetOneSite(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateSite(w http.ResponseWriter, r *http.Request) {
-	site := Site{
+	site := models.Site{
 		Title:       r.FormValue("title"),
 		Description: r.FormValue("description"),
 		URL:         r.FormValue("url"),
@@ -107,9 +85,7 @@ func CreateSite(w http.ResponseWriter, r *http.Request) {
 		tags := r.FormValue("tags")
 		categories := r.FormValue("categories") */
 
-	db := helpers.Db
-
-	err := db.QueryRow("INSERT INTO sites(title, description, url) VALUES($1, $2, $3) returning id, created, rating, views", site.Title, site.Description, site.URL).Scan(&site.ID, &site.Created, &site.Rating, &site.Views)
+	err := services.CreateSite(&site)
 	if err != nil {
 		http.Error(w, "This site in database", 400)
 		return
@@ -169,23 +145,19 @@ func CreateSite(w http.ResponseWriter, r *http.Request) {
 func UpdateSite(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	id := vars["id"]
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	site := Site{
+	site := models.Site{
+		ID:          id,
 		Title:       r.FormValue("title"),
 		Description: r.FormValue("description"),
 		URL:         r.FormValue("url"),
 	}
 
-	db := helpers.Db
-
-	result, err := db.Exec("UPDATE sites set title=$1, description=$2, url=$3 WHERE id=$4 returning id, created, rating, views", site.Title, site.Description, site.URL, id)
-	if err != nil {
-		http.Error(w, http.StatusText(500), 500)
-		return
-	}
-
-	rowsAffected, err := result.RowsAffected()
+	rowsAffected, err := services.UpdateSite(&site)
 	if err != nil || rowsAffected == 0 {
 		http.Error(w, http.StatusText(500), 500)
 		return
@@ -200,18 +172,14 @@ func DeleteSite(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	id := vars["id"]
-	var deletedID int
 
-	db := helpers.Db
-
-	err := db.QueryRow("DELETE FROM sites WHERE id=$1 returning id", id).Scan(&deletedID)
-	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Site not found", 404)
+	rowsAffected, err := services.DeleteSite(id)
+	if err != nil || rowsAffected == 0 {
+		http.Error(w, http.StatusText(500), 500)
 		return
 	}
 
-	fmt.Fprint(w, deletedID)
+	fmt.Fprintf(w, "Site with id %s deleted successfully\n", id)
 }
 
 func LikeSite(w http.ResponseWriter, r *http.Request) {
@@ -221,14 +189,14 @@ func LikeSite(w http.ResponseWriter, r *http.Request) {
 
 	var rating int
 
-	db := helpers.Db
+	row := services.LikeSite(id)
 
-	err := db.QueryRow("UPDATE sites set rating=rating+1 where id=$1 returning rating", id).Scan(&rating)
+	err := row.Scan(&rating)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Site not found", 404)
 		return
 	}
 
-	fmt.Fprint(w, rating)
+	fmt.Fprintf(w, "Site with id %s has rating %v\n", id, rating)
 }
